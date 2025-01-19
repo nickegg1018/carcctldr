@@ -1,0 +1,91 @@
+Containerization in HPC at Texas A&M
+
+Presenter: Richard Lawrence, HPC Admin and User support
+https://hprc.tamu.edu/aces/
+https://access-ci.org/
+https://allocations.access-ci.org/
+
+Questions:
+SPACK
+Performance hit with containers
+
+NOTES:
+Investigate nvidia container registry page (NGC)
+Intel Python has Conda/Mamba and does not have the license issues that Anaconda has introduced.
+
+
+
+Access is provisioned on ACES, a testbed for novel accelerators, available nationwide through ACCESS/XSEDE
+
+Containers are especially important on ACES because of the diverse workloads and the software stacks needed for all those workloads
+(SPACK not being chose unclear)
+
+Have docker and podman rootless, but recommend charliecloud and singularity
+Singularity and Charliecloud were designed from the beginning to work well with HPC. Better handling of shared FS, GPUs, multi-user environments, and rootless out of the box
+
+Support vast types of users; first time Linuxers vs deep Linux understanding
+- Researchers creading and sharing their own containers
+- Researchers reproducing results with others containers
+- Researchers unaware their application is containerized
+
+Conda is a good way to deploy but conda is hard on network filesystems
+If conda is containerized it puts much less of a file burden on the FS
+
+"The strategy is to make it feel the same whether the container is there or not"
+
+Pytorch (as an example) can come straight from the nvidia container registry
+
+Containerized applications in OOD. Jupyter Notebook will run in a singularity environment which is the most popular python editor in ACES
+
+Know your image formats!:
+- Directory (multiple files)
+	- mode: rw
+	- speed: slow
+	- storage location: local filesystem (nvme)
+	- purpose: editing images
+- Squashfs/SIF (single file)
+	- mode: ro
+	- speed: fast
+	- storage location: network fs (lustre)
+	- purpose: executing software
+	
+What if a user needs custom python packages that aren't included in the deployed image?
+Answer: create a python virtual environment on the shared filesystem which is mounted in the image
+If something needs to exist at the root of the image or large numbers of packages need installed then a bespoke container may need to be created
+
+TODO: Distill training and job submission stats from YT video here
+
+Kubernetes:
+So far K8s has not had a huge impact on HPC
+A&M is preparing to support K8s, and has a small testbed set aside
+Auth is tricky, resource allocation is tricky
+
+Why Kubernetes? K8s comes from the cloud and usually targets a different usecase that HPC
+K8s is better at small bursty workloads whereas traditional HPC is more long running jobs
+K8s is good for interactive work where the user is in the loop
+ - Example: A chatbot where a user and bot are interacting and the resources can scale up and down
+
+Q:What is the most compelling advantages of Charliecloud over Singularity?
+A: CC and apptainer is being developed in parallel by different teams, and are competing with each other with feature availability.
+Long term there isn't an advantage but at different discrete points look at features and see what you might need
+CC is a DIY solution, it's more lightweight, encourages you to do more heavy lifting yourself but gives more freedom and less opinionated about the right/wrong way to have "a container"
+Apptainer/Singularity is less DIY and more "one stop shop", less work needs done but many of the common issues may be solved for you OOB but gives less freedom
+
+Q: We have been trying to move more towards this at Dartmouth, the biggest challenge is researcher diversity with preferance toward self-service
+   Docker desktop is the closet we've gotten to self-service but this comes with its own issues. What is your solution to self-service image creation?
+A: That is OS dependent. Older Linux Kernels do not allow rootless container creation so you have to have admin rights. 
+   Newer versions of Linux have "User Namespace" options which allow users to create images in the modern container runtimes on the cluster without sudo
+   There are multiple menthods of this but "fakeroot" is one of the most common. This started with CC but Singularity has this now as well
+   The Kernel has had this for some time but the option is distro specific. EL8 and above has this supported. 
+   
+Q: Have you used SHPC (Singularity HPC) to create containers as a module?
+A: No, seems cool
+
+Q: Have you had issues with containers built for Docker not working in Singularity and how do you deal with it?
+A: "Garbage in a container is still garbage". Sometimes software is just incompatable with HPC or is badly written and it's hard to make a general statement of how to address that for every situation
+
+Q: Where do you put these images, are they just on the cluster filesystem or do you host a container registry?
+A: The images live straight on the cluster filesystem. We looked at hosting a container registry but we didn't have a uscase that fit our needs. 
+   Registries seem more useful for sharing containers across clusters instead of on one cluster.
+
+  
